@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import EditHotelModal from '@/components/EditHotelModal';
 import { db } from '@/config/firebase';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, doc, deleteDoc } from 'firebase/firestore';
 
 export default function HotelManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +16,8 @@ export default function HotelManagement() {
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedHotelId, setSelectedHotelId] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [hotelToDelete, setHotelToDelete] = useState<{id: string, name: string} | null>(null);
 
   // Fetch hotels from Firestore
   useEffect(() => {
@@ -55,6 +57,35 @@ export default function HotelManagement() {
   const handleEditClick = (hotelId: string) => {
     setSelectedHotelId(hotelId);
     setEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (hotel: {id: string, name: string}) => {
+    setHotelToDelete(hotel);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!hotelToDelete) return;
+    
+    try {
+      // Delete the hotel document from Firestore
+      await deleteDoc(doc(db, 'hotels', hotelToDelete.id));
+      
+      // Update the local state to remove the deleted hotel
+      setHotels(hotels.filter(hotel => hotel.id !== hotelToDelete.id));
+      
+      // Close the confirmation dialog
+      setShowDeleteConfirm(false);
+      setHotelToDelete(null);
+    } catch (error) {
+      console.error('Error deleting hotel:', error);
+      alert('Failed to delete hotel. Please try again.');
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setHotelToDelete(null);
   };
 
   const filteredHotels = hotels.filter(hotel => {
@@ -225,6 +256,12 @@ export default function HotelManagement() {
                     >
                       Edit
                     </button>
+                    <button 
+                      onClick={() => handleDeleteClick({id: hotel.id, name: hotel.name})}
+                      className="flex-1 border border-red-300 text-red-700 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors cursor-pointer whitespace-nowrap text-center text-sm"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               </div>
@@ -257,6 +294,32 @@ export default function HotelManagement() {
         onClose={() => setEditModalOpen(false)}
         hotelId={selectedHotelId}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Confirm Deletion</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete the hotel "{hotelToDelete?.name}"? This action cannot be undone.
+            </p>
+            <div className="flex space-x-3 justify-end">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

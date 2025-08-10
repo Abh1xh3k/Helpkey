@@ -7,7 +7,12 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Header() {
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { user, signOut, loading } = useAuth();
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
 
   return (
     <header className="bg-white shadow-sm">
@@ -24,12 +29,15 @@ export default function Header() {
         <div className="flex items-center space-x-4">
           {!loading && (
             user ? (
-              <div className="relative group">
-                <button className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors">
+              <div className="relative">
+                <button 
+                  onClick={toggleDropdown}
+                  className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors"
+                >
                   <span>{user.displayName || user.email}</span>
                   <i className="ri-arrow-down-s-line"></i>
                 </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10 hidden group-hover:block">
+                <div className={`absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10 ${isDropdownOpen ? 'block' : 'hidden'}`}>
                   <Link href="/bookings" className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors">
                     My Bookings
                   </Link>
